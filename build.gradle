@@ -1,0 +1,83 @@
+import groovy.swing.SwingBuilder
+
+import javax.swing.JFileChooser
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.1'
+    }
+}
+
+group = 'com.cegeka.ventouris.groovy.coda'
+version = '0.0.1-SNAPSHOT'
+
+apply plugin:'groovy'
+apply plugin: 'org.junit.platform.gradle.plugin'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.4.9'
+
+    testCompile 'org.mockito:mockito-core:2.12.0'
+    testCompile 'org.assertj:assertj-core:3.8.0'
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.0.1'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.0.1'
+}
+
+task parseCoda(type: JavaExec, dependsOn: 'classes') {
+    group = 'ventouris'
+    doFirst {
+
+        def inputCoda = chooseFile('txt', 'Selecteer het coda input bestand')
+        if (!inputCoda.exists()) {
+            throw new RuntimeException("$inputCoda.absolutePath werd niet gevonden!")
+        }
+
+        main = 'com.cegeka.ventouris.groovy.coda.parser.CodaParser'
+        classpath = sourceSets.main.runtimeClasspath
+        maxHeapSize = '1024m'
+        args = [
+                inputCoda.absolutePath
+        ]
+    }
+}
+
+private static List createParentDialog() {
+    def builder = new SwingBuilder()
+    def dialog = builder.dialog()
+    dialog.alwaysOnTop = true
+    [builder, dialog]
+}
+
+static File chooseFile(String extension, String title) {
+    def (builder, dialog) = createParentDialog()
+    builder.fileChooser()
+
+    def chooser = new SwingBuilder().fileChooser(
+            dialogTitle: title,
+            fileSelectionMode: JFileChooser.FILES_ONLY,
+            multiSelectionEnabled: false,
+            fileFilter: new javax.swing.filechooser.FileFilter() {
+                @Override
+                boolean accept(File pathname) {
+                    return pathname.isDirectory() || pathname.getName().endsWith(".${extension}")
+                }
+
+                @Override
+                String getDescription() {
+                    return "${extension} files"
+                }
+            }
+    )
+    int result = chooser.showOpenDialog(dialog as java.awt.Component)
+    if (result == JFileChooser.CANCEL_OPTION) throw new RuntimeException("Geen bestand geselecteerd")
+    return chooser.selectedFile
+}
