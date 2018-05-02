@@ -10,13 +10,17 @@ import groovy.json.JsonOutput
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class CodaParser {
 
     static void main(String[] args) {
         def codaLines = new File(args[0]).text
         def parse = CodaParser.parse(codaLines)
-        println JsonOutput.toJson(parse)
+		Files.deleteIfExists(Paths.get("${args[0]}.json"))
+		new File("${args[0]}.json").withWriter { out -> out.println JsonOutput.prettyPrint(JsonOutput.toJson(parse))}
+		println "Coda written to json file: ${args[0]}.json"
     }
 
 
